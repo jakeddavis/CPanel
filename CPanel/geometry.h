@@ -262,6 +262,12 @@ class geometry
     void createVPWakeSurfaces(const Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> &wakeConnectivity, const Eigen::MatrixXd &wakeNorms,  const std::vector<size_t> &VPwakeID, std::vector<bool> isFirstPanel);
     void calcTimeStep();
 
+
+	void supSortUpperLower(std::string tri_file);
+
+
+
+
 public:
     geometry(inputParams* p)
     {
@@ -279,6 +285,23 @@ public:
 		inputMach = p->machs(0);
 		alpha = p->alphas(0);
 		beta = p->betas(0);
+
+
+		//---------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------//
+
+		// Read in supersonic sharp leading edge flag given by user (defined here for now)
+		bool supSharpLEflag = true;
+		// Check flag
+		if (supSharpLEflag)
+		{
+			// Sort tri file into upper and lower, and make copies of LE/TE nodes and edges
+			supSortUpperLower(p->geomFile->file);
+		}
+
+		//---------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------//
+
 
         readTri(p->geomFile->file, p->normFlag);
     }

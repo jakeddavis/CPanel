@@ -129,6 +129,102 @@ geometry& geometry::operator=(const geometry &rhs)
     return *this;
 }
 
+
+
+void geometry::supSortUpperLower(std::string tri_file)
+{
+	// open tri file
+	std::ifstream fid;
+	fid.open(tri_file);
+	if (fid.is_open())
+	{
+		// read and assign number of nodes and number of tris
+		fid >> nNodes >> nTris;
+
+		// compute panel normals
+
+		// Read XYZ Locations of Nodes
+		//Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> tempPnts(nNodes, 3);
+		std::vector<Eigen::Vector3d> tempPnts;
+		Eigen::Vector3d tempPnt;
+		for (size_t i = 0; i<nNodes; i++)
+		{
+			fid >> tempPnt(0) >> tempPnt(1) >> tempPnt(2);
+			//fid >> tempPnts(i, 0) >> tempPnts(i, 1) >> tempPnts(i, 2);
+			tempPnts.push_back(tempPnt);
+		}
+
+		// read connectivity
+		std::vector<Eigen::Vector3d> tempCons;
+		Eigen::Vector3d tempCon;
+		for (size_t i = 0; i<nTris; i++)
+		{
+			/*fid >> tempCon(i, 0) >> tempCon(i, 2) >> tempCon(i, 1);*/
+			fid >> tempCon(0) >> tempCon(2) >> tempCon(1);
+			tempCons.push_back(tempCon);
+			tempCons[i].x() -= 1;
+			tempCons[i].y() -= 1;
+			tempCons[i].z() -= 1;
+		}
+
+		// compute normals
+		std::vector<Eigen::Vector3d> tempNorms;
+		//Eigen::Vector3d tempNorm;
+		Eigen::Vector3d p0, p1, p2, a, b;
+		std::vector<size_t> upperPans, lowerPans, otherPans;
+		for (size_t i = 0; i < nTris; i++)
+		{
+			p0 = tempPnts[tempCons[i].x()];
+			p1 = tempPnts[tempCons[i].y()];
+			p2 = tempPnts[tempCons[i].z()];
+
+			a = p1 - p0;
+			b = p2 - p0;
+
+			tempNorms.push_back(a.cross(b));
+			tempNorms[i].normalize();
+
+			///////////////////////////////////////////////////////////////////////////
+			std::cout << tempNorms[i] << "\n" << std::endl;
+			///////////////////////////////////////////////////////////////////////////
+
+			// check sign of normal z-component (i.e. upper or lower panel)
+			if (tempNorms[i].z() > 1.0e-10) // upper
+			{
+				upperPans.push_back(i);
+			}
+			else if (tempNorms[i].z() < -1.0e-10) // lower
+			{
+				lowerPans.push_back(i);
+			}
+			else // other
+			{
+				otherPans.push_back(i);
+			}
+
+		}
+
+		//// read connectivity
+		//Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> tempCon(nTris, 3);
+		//for (Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index i = 0; i<static_cast<Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index>(nTris); i++)
+		//{
+		//	fid >> tempCon(i, 0) >> tempCon(i, 2) >> tempCon(i, 1);
+		//}
+
+
+
+
+	}
+	else
+	{
+		std::cout << "ERROR : Geometry file not found" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+}
+
+
+
+
 void geometry::readTri(std::string tri_file, bool normFlag)
 {
     std::ifstream fid;
@@ -151,6 +247,51 @@ void geometry::readTri(std::string tri_file, bool normFlag)
 			}
 		}
 
+
+
+		//---------------------------------------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------------------------------------//
+
+		// NOTES: - number of panels remains the same, it's just the node count that changes, and where the nodes are assigned
+
+		// Algorithm for solving supersonic solver leading and trailing edge problems
+		//		1. Read .tri file
+		//		2. Identify leading and trailing edge panels/nodes
+		//		3. Make copies of leading/trailing edge nodes
+		//		4. Assign one copy of node to upper panel, and the other copy to the lower panel
+		//		5. I think that's it??
+
+		//// Create temporary fid
+		//std::ifstream fidTemp;
+		//fidTemp.open(tri_file);
+
+		//// Read first line of tri file
+		//size_t nNodesTemp, nTrisTemp;
+		//fidTemp >> nNodes >> nTris;
+
+		//// Read XYZ Locations of Nodes and Create temporary nodes
+		//Eigen::Vector3d pntTemp;
+		//nodes_type nodesTemp;
+		//cpNode* n;
+		//for (size_t i = 0; i<nNodes; i++)
+		//{
+		//	fid >> pntTemp(0) >> pntTemp(1) >> pntTemp(2);
+		//	n = new cpNode(pntTemp, i);
+		//	nodesTemp.push_back(n);
+		//}
+
+
+		// Need to only go through body nodes, and not wake nodes --> use IDs
+
+		//---------------------------------------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------------------------------------//
+		//---------------------------------------------------------------------------------------------------------------------//
+
+
+
         std::cout << "Reading Geometry..." << std::endl;
         fid >> nNodes >> nTris;
         Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> connectivity(nTris,3);
@@ -169,30 +310,6 @@ void geometry::readTri(std::string tri_file, bool normFlag)
             n = new cpNode(pnt,i);
             nodes.push_back(n);
         }
-
-
-		//------------------------------------------------------------------------------------//
-
-		//// Forceing bottom z-coords of flat bottom case to zero
-
-		//// Read XYZ Locations of Nodes
-		//Eigen::Vector3d pnt;
-		//cpNode* n;
-		//for (size_t i = 0; i<nNodes; i++)
-		//{
-		//	fid >> pnt(0) >> pnt(1) >> pnt(2);
-
-		//	if (pnt(2) < 1.0e-6)
-		//	{
-		//		pnt(2) = 0;
-		//	}
-
-		//	n = new cpNode(pnt, i);
-		//	nodes.push_back(n);
-		//}
-
-		//------------------------------------------------------------------------------------//
-
 
 
         // Temporarily Store Connectivity
@@ -1340,6 +1457,9 @@ void geometry::createVPWakeSurfaces(const Eigen::Matrix<size_t, Eigen::Dynamic, 
         }
     }
 }
+
+
+
 
 //void geometry::moveGeom( std::vector<double> bodyKin ){
 //    

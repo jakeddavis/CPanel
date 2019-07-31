@@ -1659,7 +1659,7 @@ void bodyPanel::linTransformPanel()
 					Arow[nodes[i]->getIndex()] += dubVertsPhi(i);
 				}*/
 				//--------------------------------------------------------------------------------------//
-				Arow[nodes[i]->getIndex()] += dubVertsPhi(i);
+				//Arow[nodes[i]->getIndex()] += dubVertsPhi(i);
 			}
 		}
 	}

@@ -445,18 +445,18 @@ void cpCase::supCompVelocity()
 		bool checkPanel = false;
 		bool isTipPan = false;
 		nodes_index_type j = 0;
-		while (j < p->getNodes().size() && !checkPanel)
-		{
-			if (p->getNodes()[j]->isTE())
-			{
-				checkPanel = true;
-			}
-			else if (p->getNodes()[j]->supGetTipFlag())
-			{
-				isTipPan = true;
-			}
-			j += 1;
-		}
+		//while (j < p->getNodes().size() && !checkPanel)
+		//{
+		//	if (p->getNodes()[j]->isTE())
+		//	{
+		//		checkPanel = true;
+		//	}
+		//	/*else if (p->getNodes()[j]->supGetTipFlag())
+		//	{
+		//		isTipPan = true;
+		//	}
+		//	j += 1;*/
+		//}
 
 		if (checkPanel)
 		{
