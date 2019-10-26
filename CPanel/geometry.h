@@ -186,6 +186,9 @@
 #include "inputParams.h"
 #include "cpNode.h"
 
+//#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
+
 class geometry
 {
 	using surfaces_type = std::vector<surface *>;
@@ -295,8 +298,24 @@ public:
 		// Check flag
 		if (supSharpLEflag)
 		{
+			// Create new .tri file to write sorted data to
+			std::string sorted = "/sorted.tri";
+			std::string newSorted = p->geomFile->path + sorted;
+
+			if (boost::filesystem::exists(newSorted))
+			{
+				boost::filesystem::remove(newSorted);
+			}
+				
+
+			boost::filesystem::copy_file(p->geomFile->file, newSorted);
+
 			// Sort tri file into upper and lower, and make copies of LE/TE nodes and edges
-			supSortUpperLower(p->geomFile->file);
+			supSortUpperLower(newSorted);
+
+
+			/*std::cout << p->geomFile->path << std::endl;
+			std::cout << p->geomFile->file << std::endl;*/
 		}
 
 		//---------------------------------------------------------------------------------------//

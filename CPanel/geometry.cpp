@@ -201,8 +201,100 @@ void geometry::supSortUpperLower(std::string tri_file)
 			{
 				otherPans.push_back(i);
 			}
-
 		}
+
+		size_t nUpper, nLower, nOther;
+		nUpper = upperPans.size();
+		nLower = lowerPans.size();
+		nOther = otherPans.size();
+
+		///////////////////////////////////////////////////////////////// PRE 10/26/2019
+
+		// loop through raw connectivity list
+			// compare each panel to the ones before it
+				// if two of the compared panels share two nodes, and one panel isn't an other
+					// make copies of the two nodes
+					// assign new indices to the new nodes
+					// assign the new nodes to the upper panel
+				//
+			//
+		//
+
+		///////////////////////////////////////////////////////////////// PRE 10/26/2019
+
+
+		// 10/26/2019
+
+		// Compare UPPERPANS w/ LOWERPANS and find common points, make copies and assign
+		// Compare UPPERPANS w/ OTHERPANS " "
+		// Compare LOWERPANS w/ OTHERPANS " "
+
+		// upperPans VS lowerPans
+
+
+
+		// upperPans VS otherPans
+
+
+
+		// lowerPans VS otherPans
+
+		for (size_t i = 0; i < nTris; i++)
+		{
+			for (size_t j = 0; j < nTris; j++)
+			{
+
+			}
+		}
+
+
+
+		///////////////////////// couldn't figure out how to do this
+
+		//// loop through 'otherPans', compare with 'upperPans' and 'lowerPans', find nodes that aren't shared with either
+		//for (size_t i = 0; i < nOther; i++)
+		//{
+
+		//}
+
+
+
+		// read panel IDs (so that they can be written back into the new .tri file)
+		int tempID;
+		std::vector<int> tempIDs;
+		for (size_t i = 0; i < nTris; i++)
+		{
+			fid >> tempID;
+			tempIDs.push_back(tempID);
+		}
+		fid.close();
+
+
+		// If I go back through both the list of upper and lower panels and write the nodes from each list to
+		// a new .tri file, LE and TE nodes will be written twice
+		// if they are written twice, it needs to be recorded, indexed, and assigned to its associated upper or lower panel
+
+		// for 'otherPans', as the upper and lower pans are written, record which nodes are written,
+		// then only write the nodes that aren't on that recorded list
+
+
+		// open and clear new .tri file
+		fid.open(tri_file, std::ofstream::out | std::ofstream::trunc);
+		fid.close();
+
+		// write new panel and node data to new .tri file
+		std::ofstream fid;
+		fid.open(tri_file);
+
+
+
+
+
+		fid.close();
+
+
+
+		std::cout << "pause" << std::endl;
 
 		//// read connectivity
 		//Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> tempCon(nTris, 3);
