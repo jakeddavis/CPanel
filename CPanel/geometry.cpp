@@ -231,7 +231,93 @@ void geometry::supSortUpperLower(std::string tri_file)
 
 		// upperPans VS lowerPans
 
+		for (size_t i = 0; i < nUpper; i++)
+		{
+			for (size_t j = 0; j < nLower; j++)
+			{
+				std::vector<int> commonCons;
 
+				// put upper and lower panel connectivity data into STL vectors
+				std::vector<double> compCons1 = { tempCons[upperPans[i]].x(), tempCons[upperPans[i]].y(), tempCons[upperPans[i]].z() };
+				std::vector<double> compCons2 = { tempCons[lowerPans[j]].x(), tempCons[lowerPans[j]].y(), tempCons[lowerPans[j]].z() };
+
+				/*std::vector<double> compCons1_Orig = { tempCons[upperPans[i]].x(), tempCons[upperPans[i]].y(), tempCons[upperPans[i]].z() };
+				std::vector<double> compCons2_Orig = { tempCons[lowerPans[j]].x(), tempCons[lowerPans[j]].y(), tempCons[lowerPans[j]].z() };
+				std::vector<double> compCons1 = compCons1_Orig;
+				std::vector<double> compCons2 = compCons2_Orig;*/
+
+				// sort the two vectors
+				std::sort(compCons1.begin(), compCons1.end());
+				std::sort(compCons2.begin(), compCons2.end());
+
+				// initialise a vector store the common values and an iterator to traverse this vector 
+				std::vector<int> v(compCons1.size() + compCons2.size());
+				std::vector<int>::iterator it, st;
+
+				// define iterator
+				it = std::set_intersection(compCons1.begin(), compCons1.end(), compCons2.begin(), compCons2.end(), v.begin());
+
+				// find common elements
+				for (st = v.begin(); st != it; ++st)
+				{
+					commonCons.push_back(*st);
+				}
+
+				// check if there were any common elements
+				if (commonCons.size() > 0)
+				{
+					for (size_t k = 0; k < commonCons.size(); k++)
+					{
+						// copy common points to the end of the list of points
+						tempPnts.push_back(tempPnts[commonCons[k]]);
+
+						// replace index of common point in the LOWER panel with index of new copy of common point
+						if (tempCons[lowerPans[j]].x() == commonCons[k])
+						{
+							nNodes += 1;
+							tempCons[lowerPans[j]].x() = nNodes - 1;
+						}
+						if (tempCons[lowerPans[j]].y() == commonCons[k])
+						{
+							nNodes += 1;
+							tempCons[lowerPans[j]].y() = nNodes - 1;
+						}
+						if (tempCons[lowerPans[j]].z() == commonCons[k])
+						{
+							nNodes += 1;
+							tempCons[lowerPans[j]].z() = nNodes - 1;
+						}
+					}
+				}
+
+			}
+		}
+
+		/*for (size_t m = 0; m < tempCons[i].size(); m++)
+		{
+		if (tempCons[i[m]])
+		{
+
+		}
+		}*/
+
+
+		/*if (std::find(tempCons[i].x(), tempCons[i].z(), commonCons[k]) == commonCons[k])
+		{
+		int stuff;
+		}*/
+
+
+		/*if (tempCons[j].y() == commonCons[k])
+		{
+			nNodes += 1;
+			tempCons[j].y() = nNodes - 1;
+		}
+		if (tempCons[j].z() == commonCons[k])
+		{
+			nNodes += 1;
+			tempCons[j].z() = nNodes - 1;
+		}*/
 
 		// upperPans VS otherPans
 
@@ -239,13 +325,7 @@ void geometry::supSortUpperLower(std::string tri_file)
 
 		// lowerPans VS otherPans
 
-		for (size_t i = 0; i < nTris; i++)
-		{
-			for (size_t j = 0; j < nTris; j++)
-			{
 
-			}
-		}
 
 
 
