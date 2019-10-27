@@ -266,8 +266,17 @@ class geometry
     void calcTimeStep();
 
 
-	void supSortUpperLower(std::string tri_file);
+	struct tempPntsStruct
+	{
+		Eigen::Vector3d tempPnt;
+		//size_t index;
+		bool isCopied = false;
+		int copyIndex;
+	};
 
+	void supSortSurfs(std::string tri_file);
+	void supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet2, std::vector<tempPntsStruct> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes);
+	//void supSort(std::vector<size_t> &pansSet1, std::vector<size_t> &pansSet2, std::vector<Eigen::Vector3d> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes, std::vector<int> &commonCons);
 
 
 
@@ -311,11 +320,7 @@ public:
 			boost::filesystem::copy_file(p->geomFile->file, newSorted);
 
 			// Sort tri file into upper and lower, and make copies of LE/TE nodes and edges
-			supSortUpperLower(newSorted);
-
-
-			/*std::cout << p->geomFile->path << std::endl;
-			std::cout << p->geomFile->file << std::endl;*/
+			supSortSurfs(newSorted);
 		}
 
 		//---------------------------------------------------------------------------------------//

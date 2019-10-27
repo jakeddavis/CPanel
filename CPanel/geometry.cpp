@@ -131,7 +131,7 @@ geometry& geometry::operator=(const geometry &rhs)
 
 
 
-void geometry::supSortUpperLower(std::string tri_file)
+void geometry::supSortSurfs(std::string tri_file)
 {
 	// open tri file
 	std::ifstream fid;
@@ -144,22 +144,44 @@ void geometry::supSortUpperLower(std::string tri_file)
 		// compute panel normals
 
 		// Read XYZ Locations of Nodes
-		//Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> tempPnts(nNodes, 3);
-		std::vector<Eigen::Vector3d> tempPnts;
-		Eigen::Vector3d tempPnt;
+
+		//std::vector<Eigen::Vector3d> tempPnts;
+		//Eigen::Vector3d tempPnt;
+
+		//struct tempPntsStruct
+		//{
+		//	Eigen::Vector3d tempPnt;
+		//	size_t index;
+		//	bool isCopied = false;
+		//};
+
+		std::vector<tempPntsStruct> tempPnts;
+
 		for (size_t i = 0; i<nNodes; i++)
 		{
-			fid >> tempPnt(0) >> tempPnt(1) >> tempPnt(2);
-			//fid >> tempPnts(i, 0) >> tempPnts(i, 1) >> tempPnts(i, 2);
-			tempPnts.push_back(tempPnt);
+			tempPnts.push_back(tempPntsStruct());
+			fid >> tempPnts[i].tempPnt(0) >> tempPnts[i].tempPnt(1) >> tempPnts[i].tempPnt(2);
+			//tempPnts[i].index = i;
+
+			//fid >> tempPnt(0) >> tempPnt(1) >> tempPnt(2);
+			//tempPnts.push_back(tempPnt);
 		}
 
 		// read connectivity
+		
 		std::vector<Eigen::Vector3d> tempCons;
 		Eigen::Vector3d tempCon;
+
+		/*struct tempCons
+		{
+			std::vector<Eigen::Vector3d> tempCons;
+			bool isCopied = false;
+		};*/
+
+
+
 		for (size_t i = 0; i<nTris; i++)
 		{
-			/*fid >> tempCon(i, 0) >> tempCon(i, 2) >> tempCon(i, 1);*/
 			fid >> tempCon(0) >> tempCon(2) >> tempCon(1);
 			tempCons.push_back(tempCon);
 			tempCons[i].x() -= 1;
@@ -174,9 +196,13 @@ void geometry::supSortUpperLower(std::string tri_file)
 		std::vector<size_t> upperPans, lowerPans, otherPans;
 		for (size_t i = 0; i < nTris; i++)
 		{
-			p0 = tempPnts[tempCons[i].x()];
+			p0 = tempPnts[tempCons[i].x()].tempPnt;
+			p1 = tempPnts[tempCons[i].y()].tempPnt;
+			p2 = tempPnts[tempCons[i].z()].tempPnt;
+
+			/*p0 = tempPnts[tempCons[i].x()];
 			p1 = tempPnts[tempCons[i].y()];
-			p2 = tempPnts[tempCons[i].z()];
+			p2 = tempPnts[tempCons[i].z()];*/
 
 			a = p1 - p0;
 			b = p2 - p0;
@@ -185,7 +211,7 @@ void geometry::supSortUpperLower(std::string tri_file)
 			tempNorms[i].normalize();
 
 			///////////////////////////////////////////////////////////////////////////
-			std::cout << tempNorms[i] << "\n" << std::endl;
+			//std::cout << tempNorms[i] << "\n" << std::endl;
 			///////////////////////////////////////////////////////////////////////////
 
 			// check sign of normal z-component (i.e. upper or lower panel)
@@ -208,134 +234,33 @@ void geometry::supSortUpperLower(std::string tri_file)
 		nLower = lowerPans.size();
 		nOther = otherPans.size();
 
-		///////////////////////////////////////////////////////////////// PRE 10/26/2019
+		//std::vector<size_t> origCopiedPnts, copiedPnts;
 
-		// loop through raw connectivity list
-			// compare each panel to the ones before it
-				// if two of the compared panels share two nodes, and one panel isn't an other
-					// make copies of the two nodes
-					// assign new indices to the new nodes
-					// assign the new nodes to the upper panel
-				//
-			//
-		//
-
-		///////////////////////////////////////////////////////////////// PRE 10/26/2019
-
-
-		// 10/26/2019
+		//std::vector<int> commonCons;
 
 		// Compare UPPERPANS w/ LOWERPANS and find common points, make copies and assign
+		supSort(upperPans, lowerPans, tempPnts, tempCons, nNodes);
+
+		// Saturday night: Multiple copies made of same point. Need to figure out how to make just one copy of needed points
+		//				   and apply them as needed
+
+		// Create a struct for each point which has node and a flag which says whether or not it's been copied already
+
+		////////	 // NOT WORKING
+		//		ANSWER?? : Make two vectors. One for original points, and one for copies of original points. Make
+		//				   indices align between two vectors. Then check vectors each time through
+
+
+
+		// ARE THESE NEEDED  ?????????????????????????????????????????
+
+		/*
 		// Compare UPPERPANS w/ OTHERPANS " "
+		supSort(upperPans, otherPans, tempPnts, tempCons, nNodes);
+
 		// Compare LOWERPANS w/ OTHERPANS " "
-
-		// upperPans VS lowerPans
-
-		for (size_t i = 0; i < nUpper; i++)
-		{
-			for (size_t j = 0; j < nLower; j++)
-			{
-				std::vector<int> commonCons;
-
-				// put upper and lower panel connectivity data into STL vectors
-				std::vector<double> compCons1 = { tempCons[upperPans[i]].x(), tempCons[upperPans[i]].y(), tempCons[upperPans[i]].z() };
-				std::vector<double> compCons2 = { tempCons[lowerPans[j]].x(), tempCons[lowerPans[j]].y(), tempCons[lowerPans[j]].z() };
-
-				/*std::vector<double> compCons1_Orig = { tempCons[upperPans[i]].x(), tempCons[upperPans[i]].y(), tempCons[upperPans[i]].z() };
-				std::vector<double> compCons2_Orig = { tempCons[lowerPans[j]].x(), tempCons[lowerPans[j]].y(), tempCons[lowerPans[j]].z() };
-				std::vector<double> compCons1 = compCons1_Orig;
-				std::vector<double> compCons2 = compCons2_Orig;*/
-
-				// sort the two vectors
-				std::sort(compCons1.begin(), compCons1.end());
-				std::sort(compCons2.begin(), compCons2.end());
-
-				// initialise a vector store the common values and an iterator to traverse this vector 
-				std::vector<int> v(compCons1.size() + compCons2.size());
-				std::vector<int>::iterator it, st;
-
-				// define iterator
-				it = std::set_intersection(compCons1.begin(), compCons1.end(), compCons2.begin(), compCons2.end(), v.begin());
-
-				// find common elements
-				for (st = v.begin(); st != it; ++st)
-				{
-					commonCons.push_back(*st);
-				}
-
-				// check if there were any common elements
-				if (commonCons.size() > 0)
-				{
-					for (size_t k = 0; k < commonCons.size(); k++)
-					{
-						// copy common points to the end of the list of points
-						tempPnts.push_back(tempPnts[commonCons[k]]);
-
-						// replace index of common point in the LOWER panel with index of new copy of common point
-						if (tempCons[lowerPans[j]].x() == commonCons[k])
-						{
-							nNodes += 1;
-							tempCons[lowerPans[j]].x() = nNodes - 1;
-						}
-						if (tempCons[lowerPans[j]].y() == commonCons[k])
-						{
-							nNodes += 1;
-							tempCons[lowerPans[j]].y() = nNodes - 1;
-						}
-						if (tempCons[lowerPans[j]].z() == commonCons[k])
-						{
-							nNodes += 1;
-							tempCons[lowerPans[j]].z() = nNodes - 1;
-						}
-					}
-				}
-
-			}
-		}
-
-		/*for (size_t m = 0; m < tempCons[i].size(); m++)
-		{
-		if (tempCons[i[m]])
-		{
-
-		}
-		}*/
-
-
-		/*if (std::find(tempCons[i].x(), tempCons[i].z(), commonCons[k]) == commonCons[k])
-		{
-		int stuff;
-		}*/
-
-
-		/*if (tempCons[j].y() == commonCons[k])
-		{
-			nNodes += 1;
-			tempCons[j].y() = nNodes - 1;
-		}
-		if (tempCons[j].z() == commonCons[k])
-		{
-			nNodes += 1;
-			tempCons[j].z() = nNodes - 1;
-		}*/
-
-		// upperPans VS otherPans
-
-
-
-		// lowerPans VS otherPans
-
-
-
-
-
-		///////////////////////// couldn't figure out how to do this
-
-		//// loop through 'otherPans', compare with 'upperPans' and 'lowerPans', find nodes that aren't shared with either
-		//for (size_t i = 0; i < nOther; i++)
-		//{
-
-		//}
+		supSort(lowerPans, otherPans, tempPnts, tempCons, nNodes);
+		*/
 
 
 
@@ -350,14 +275,6 @@ void geometry::supSortUpperLower(std::string tri_file)
 		fid.close();
 
 
-		// If I go back through both the list of upper and lower panels and write the nodes from each list to
-		// a new .tri file, LE and TE nodes will be written twice
-		// if they are written twice, it needs to be recorded, indexed, and assigned to its associated upper or lower panel
-
-		// for 'otherPans', as the upper and lower pans are written, record which nodes are written,
-		// then only write the nodes that aren't on that recorded list
-
-
 		// open and clear new .tri file
 		fid.open(tri_file, std::ofstream::out | std::ofstream::trunc);
 		fid.close();
@@ -366,25 +283,29 @@ void geometry::supSortUpperLower(std::string tri_file)
 		std::ofstream fid;
 		fid.open(tri_file);
 
+		// write nNodes and nTris
+		fid << nNodes << " " << nTris << "\n";
 
+		// write nodes
+		for (size_t i = 0; i < nNodes; i++)
+		{
+			fid << "\t" << tempPnts[i].tempPnt.x() << "\t" << tempPnts[i].tempPnt.y() << "\t" << tempPnts[i].tempPnt.z() << "\n";
+		}
 
+		// write connectivity
+		for (size_t i = 0; i < nTris; i++)
+		{
+			fid << tempCons[i].x()+1 << " " << tempCons[i].y()+1 << " " << tempCons[i].z()+1 << "\n";
+		}
+
+		// write panel IDs
+		for (size_t i = 0; i < nTris; i++)
+		{
+			fid << tempIDs[i] << "\n";
+		}
 
 
 		fid.close();
-
-
-
-		std::cout << "pause" << std::endl;
-
-		//// read connectivity
-		//Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> tempCon(nTris, 3);
-		//for (Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index i = 0; i<static_cast<Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index>(nTris); i++)
-		//{
-		//	fid >> tempCon(i, 0) >> tempCon(i, 2) >> tempCon(i, 1);
-		//}
-
-
-
 
 	}
 	else
@@ -394,6 +315,197 @@ void geometry::supSortUpperLower(std::string tri_file)
 	}
 }
 
+
+//void geometry::supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet2, std::vector<Eigen::Vector3d> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes, std::vector<int> &commonCons)
+void geometry::supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet2, std::vector<tempPntsStruct> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes)
+{
+
+	size_t nPanSet1 = panSet1.size();
+	size_t nPanSet2 = panSet2.size();
+
+	for (size_t i = 0; i < nPanSet1; i++)
+	{
+		for (size_t j = 0; j < nPanSet1; j++)
+		{
+			//std::vector<int> commonCon;
+			std::vector<int> commonCons;
+
+			// put panel sets 1 and 2 connectivity data into STL vectors
+			std::vector<double> compCons1 = { tempCons[panSet1[i]].x(), tempCons[panSet1[i]].y(), tempCons[panSet1[i]].z() };
+			std::vector<double> compCons2 = { tempCons[panSet2[j]].x(), tempCons[panSet2[j]].y(), tempCons[panSet2[j]].z() };
+
+			// sort the two vectors
+			std::sort(compCons1.begin(), compCons1.end());
+			std::sort(compCons2.begin(), compCons2.end());
+
+			// initialise a vector store the common values and an iterator to traverse this vector 
+			std::vector<int> v(compCons1.size() + compCons2.size());
+			std::vector<int>::iterator it, st;
+
+			// define iterator
+			it = std::set_intersection(compCons1.begin(), compCons1.end(), compCons2.begin(), compCons2.end(), v.begin());
+
+			// find common elements
+			for (st = v.begin(); st != it; ++st)
+			{
+				//commonCon.push_back(*st);
+				//commonCon = *st;
+				commonCons.push_back(*st);
+			}
+
+			// check if there were any common elements
+			if (commonCons.size() > 0)
+			//if (commonCon.size() > 0)
+			{
+				for (size_t k = 0; k < commonCons.size(); k++)
+				{
+					// check if common point has already been copied
+
+					// from common connectivity index, go into points and check isCopied flag
+					if (tempPnts[commonCons[k]].isCopied == true)
+					{
+						if (tempCons[panSet2[j]].x() == commonCons[k])
+						{
+							tempCons[panSet2[j]].x() = tempPnts[commonCons[k]].copyIndex;
+							//tempCons[panSet2[j]].x() = nNodes - 1;
+						}
+						else if (tempCons[panSet2[j]].y() == commonCons[k])
+						{
+							tempCons[panSet2[j]].y() = tempPnts[commonCons[k]].copyIndex;
+						}
+						else if (tempCons[panSet2[j]].z() == commonCons[k])
+						{
+							tempCons[panSet2[j]].z() = tempPnts[commonCons[k]].copyIndex;
+						}
+					}
+					else
+					{
+						nNodes += 1;
+
+						// copy common points to the end of the list of points
+						tempPnts.push_back(tempPntsStruct());
+						tempPnts[nNodes-1].tempPnt = tempPnts[commonCons[k]].tempPnt;
+						tempPnts[commonCons[k]].isCopied = true;
+						tempPnts[commonCons[k]].copyIndex = nNodes - 1;
+
+						// replace index of common point in the LOWER panel with index of new copy of common point
+						if (tempCons[panSet2[j]].x() == commonCons[k])
+						{
+							tempCons[panSet2[j]].x() = nNodes - 1;	// same as copyIndex, doesn't matter which is used
+						}
+						if (tempCons[panSet2[j]].y() == commonCons[k])
+						{
+							tempCons[panSet2[j]].y() = nNodes - 1;
+						}
+						if (tempCons[panSet2[j]].z() == commonCons[k])
+						{
+							tempCons[panSet2[j]].z() = nNodes - 1;
+						}
+					}
+					
+
+
+					/*size_t m = 0;
+					while(commonCon[k] !=)
+
+					for (size_t m = 0; m < commonCons.size(); m++)
+					{
+
+					}*/
+
+					//// copy common points to the end of the list of points
+					//tempPnts.push_back(tempPnts[commonCons[k]]);
+
+					//// replace index of common point in the LOWER panel with index of new copy of common point
+					//if (tempCons[panSet2[j]].x() == commonCons[k])
+					//{
+					//	nNodes += 1;
+					//	tempCons[panSet2[j]].x() = nNodes - 1;
+					//}
+					//if (tempCons[panSet2[j]].y() == commonCons[k])
+					//{
+					//	nNodes += 1;
+					//	tempCons[panSet2[j]].y() = nNodes - 1;
+					//}
+					//if (tempCons[panSet2[j]].z() == commonCons[k])
+					//{
+					//	nNodes += 1;
+					//	tempCons[panSet2[j]].z() = nNodes - 1;
+					//}
+				}
+			}
+
+		}
+	}
+
+
+}
+
+
+
+// upperPans VS lowerPans
+
+//for (size_t i = 0; i < nUpper; i++)
+//{
+//	for (size_t j = 0; j < nLower; j++)
+//	{
+//		std::vector<int> commonCons;
+
+//		// put upper and lower panel connectivity data into STL vectors
+//		std::vector<double> compCons1 = { tempCons[upperPans[i]].x(), tempCons[upperPans[i]].y(), tempCons[upperPans[i]].z() };
+//		std::vector<double> compCons2 = { tempCons[lowerPans[j]].x(), tempCons[lowerPans[j]].y(), tempCons[lowerPans[j]].z() };
+
+//		/*std::vector<double> compCons1_Orig = { tempCons[upperPans[i]].x(), tempCons[upperPans[i]].y(), tempCons[upperPans[i]].z() };
+//		std::vector<double> compCons2_Orig = { tempCons[lowerPans[j]].x(), tempCons[lowerPans[j]].y(), tempCons[lowerPans[j]].z() };
+//		std::vector<double> compCons1 = compCons1_Orig;
+//		std::vector<double> compCons2 = compCons2_Orig;*/
+
+//		// sort the two vectors
+//		std::sort(compCons1.begin(), compCons1.end());
+//		std::sort(compCons2.begin(), compCons2.end());
+
+//		// initialise a vector store the common values and an iterator to traverse this vector 
+//		std::vector<int> v(compCons1.size() + compCons2.size());
+//		std::vector<int>::iterator it, st;
+
+//		// define iterator
+//		it = std::set_intersection(compCons1.begin(), compCons1.end(), compCons2.begin(), compCons2.end(), v.begin());
+
+//		// find common elements
+//		for (st = v.begin(); st != it; ++st)
+//		{
+//			commonCons.push_back(*st);
+//		}
+
+//		// check if there were any common elements
+//		if (commonCons.size() > 0)
+//		{
+//			for (size_t k = 0; k < commonCons.size(); k++)
+//			{
+//				// copy common points to the end of the list of points
+//				tempPnts.push_back(tempPnts[commonCons[k]]);
+
+//				// replace index of common point in the LOWER panel with index of new copy of common point
+//				if (tempCons[lowerPans[j]].x() == commonCons[k])
+//				{
+//					nNodes += 1;
+//					tempCons[lowerPans[j]].x() = nNodes - 1;
+//				}
+//				if (tempCons[lowerPans[j]].y() == commonCons[k])
+//				{
+//					nNodes += 1;
+//					tempCons[lowerPans[j]].y() = nNodes - 1;
+//				}
+//				if (tempCons[lowerPans[j]].z() == commonCons[k])
+//				{
+//					nNodes += 1;
+//					tempCons[lowerPans[j]].z() = nNodes - 1;
+//				}
+//			}
+//		}
+
+//	}
+//}
 
 
 
