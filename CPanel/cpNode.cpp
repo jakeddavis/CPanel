@@ -161,6 +161,23 @@ void cpNode::setLinCPoffset()
 	linCPoffset = k * edgeLenAvg;
 }
 
+void cpNode::setLinCPoffsetCopy()
+{
+	double edgeLenSum, edgeLenAvg, k;
+	edgeLenSum = 0;
+
+	for (edges_index_type i = 0; i < getEdges().size(); i++)
+	{
+		edgeLenSum += getEdges()[i]->length();
+	}
+
+	edgeLenAvg = edgeLenSum / getEdges().size();
+
+	k = 0.000015; // determined from offset convergence study
+
+	linCPoffset = k * edgeLenAvg;
+}
+
 
 Eigen::Vector3d cpNode::calcCP()
 {

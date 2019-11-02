@@ -140,6 +140,7 @@ void geometry::supSortSurfs(std::string tri_file)
 	{
 		// read and assign number of nodes and number of tris
 		fid >> nNodes >> nTris;
+		nNodesOrig = nNodes;
 
 		// compute panel normals
 
@@ -182,7 +183,8 @@ void geometry::supSortSurfs(std::string tri_file)
 
 		for (size_t i = 0; i<nTris; i++)
 		{
-			fid >> tempCon(0) >> tempCon(2) >> tempCon(1);
+			fid >> tempCon(0) >> tempCon(1) >> tempCon(2);
+			//fid >> tempCon(0) >> tempCon(2) >> tempCon(1);
 			tempCons.push_back(tempCon);
 			tempCons[i].x() -= 1;
 			tempCons[i].y() -= 1;
@@ -323,9 +325,11 @@ void geometry::supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet
 	size_t nPanSet1 = panSet1.size();
 	size_t nPanSet2 = panSet2.size();
 
+	size_t count = 0;
+
 	for (size_t i = 0; i < nPanSet1; i++)
 	{
-		for (size_t j = 0; j < nPanSet1; j++)
+		for (size_t j = 0; j < nPanSet2; j++)
 		{
 			//std::vector<int> commonCon;
 			std::vector<int> commonCons;
@@ -942,7 +946,16 @@ void geometry::readTri(std::string tri_file, bool normFlag)
 				{
 					bodyNodes.push_back(nodes[i]);
 					nodes[i]->setLinCPnormal();
-					nodes[i]->setLinCPoffset();
+
+					if (i > nNodesOrig - 1)
+					{
+						nodes[i]->setLinCPoffsetCopy();
+					}
+					else
+					{
+						nodes[i]->setLinCPoffset();
+					}
+					//nodes[i]->setLinCPoffset();
 				}
 				else
 				{
@@ -1395,6 +1408,7 @@ void geometry::supSetInfCoeff()
 		{
 			DODflag = bPanels[j]->supDODcheck(ctrlPnt, inputMach, windDir);
 			bPanels[j]->supPhiInf(ctrlPnt, Arow, B(static_cast<Eigen::MatrixXd::Index>(i), static_cast<Eigen::MatrixXd::Index>(j)), DODflag, inputMach);
+			//bPanels[j]->supPhiInf11012019(ctrlPnt, Arow, B(static_cast<Eigen::MatrixXd::Index>(i), static_cast<Eigen::MatrixXd::Index>(j)), DODflag, inputMach, i);
 		}
 		A.row(i) = Arow;
 

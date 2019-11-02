@@ -274,6 +274,8 @@ class geometry
 		int copyIndex;
 	};
 
+	size_t nNodesOrig;
+
 	void supSortSurfs(std::string tri_file);
 	void supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet2, std::vector<tempPntsStruct> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes);
 	//void supSort(std::vector<size_t> &pansSet1, std::vector<size_t> &pansSet2, std::vector<Eigen::Vector3d> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes, std::vector<int> &commonCons);
@@ -304,6 +306,7 @@ public:
 
 		// Read in supersonic sharp leading edge flag given by user (defined here for now)
 		bool supSharpLEflag = true;
+		//bool supSharpLEflag = false;
 		// Check flag
 		if (supSharpLEflag)
 		{
@@ -321,13 +324,19 @@ public:
 
 			// Sort tri file into upper and lower, and make copies of LE/TE nodes and edges
 			supSortSurfs(newSorted);
+
+			readTri(newSorted, p->normFlag);
+		}
+		else
+		{
+			readTri(p->geomFile->file, p->normFlag);
 		}
 
 		//---------------------------------------------------------------------------------------//
 		//---------------------------------------------------------------------------------------//
 
 
-        readTri(p->geomFile->file, p->normFlag);
+        //readTri(p->geomFile->file, p->normFlag);
     }
 
     virtual ~geometry();

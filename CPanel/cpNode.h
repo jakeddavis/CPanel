@@ -94,6 +94,10 @@ public:
 	double linGetCPoffset() { return linCPoffset; }
     
 	void supSetPotential();
+
+
+
+	void setLinCPoffsetCopy();
 };
 
 #endif /* defined(__CPanel___Unstructured_Panel_Code__cpNode__) */
