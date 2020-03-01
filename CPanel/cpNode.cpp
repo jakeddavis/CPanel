@@ -144,6 +144,19 @@ void cpNode::setLinCPnormal()
 }
 
 
+void cpNode::setLinCPnormalCopy()
+{
+	linCPnormal.setZero();
+	for (bodyPanels_index_type i = 0; i < getBodyPans().size(); i++)
+	{
+		linCPnormal += getBodyPans()[i]->getNormal();
+	}
+	Eigen::Vector3d offsetVec = { 0.05, 0.05, 0.05 };
+	linCPnormal += offsetVec;
+	linCPnormal.normalize();
+}
+
+
 void cpNode::setLinCPoffset()
 {
 	double edgeLenSum, edgeLenAvg, k;
@@ -173,10 +186,31 @@ void cpNode::setLinCPoffsetCopy()
 
 	edgeLenAvg = edgeLenSum / getEdges().size();
 
-	k = 0.000015; // determined from offset convergence study
+	k = 0.00001; // determined from offset convergence study
 
 	linCPoffset = k * edgeLenAvg;
 }
+
+
+
+void cpNode::copyCtrlPntNodeOffset(double offset)
+{
+	linCPoffset = offset;
+}
+
+void cpNode::copyCtrlPntNodeOffset2(double offset)
+{
+	linCPoffset = offset + 0.00005;
+}
+
+
+
+void cpNode::copyCtrlPntNodeNormal(Eigen::Vector3d normal)
+{
+	linCPnormal = normal;
+}
+
+
 
 
 Eigen::Vector3d cpNode::calcCP()

@@ -311,7 +311,15 @@ bool cpCase::supSolveMatrixEq()
 	std::cout << "\n" << "RHS" << "\n" << RHS << std::endl;*/
 
 	std::cout << "\n" << "sources" << "\n" << sigmas << std::endl;
-	std::cout << "\n" << "doublets" << "\n" << doubletStrengths << std::endl;
+	//std::cout << "\n" << "doublets" << "\n" << doubletStrengths << std::endl;
+
+
+	std::cout << "\n" << "doublets" << "\n" << std::endl;
+	for (size_t i = 0; i < nodes.size(); i++)
+	{
+		std::cout << doubletStrengths(i) << "\t" << nodes[i]->getPnt().x() << " " << nodes[i]->getPnt().y() << " " << nodes[i]->getPnt().z() << std::endl;
+	}
+
 
 	if (res.error() > pow(10, -10))
 	{

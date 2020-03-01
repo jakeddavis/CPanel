@@ -98,6 +98,14 @@ public:
 
 
 	void setLinCPoffsetCopy();
+	void setLinCPnormalCopy();
+
+	Eigen::Vector3d linGetCPnormal() { return linCPnormal; }
+
+	void copyCtrlPntNodeOffset(double offset);
+	void copyCtrlPntNodeOffset2(double offset);
+
+	void copyCtrlPntNodeNormal(Eigen::Vector3d normal);
 };
 
 #endif /* defined(__CPanel___Unstructured_Panel_Code__cpNode__) */

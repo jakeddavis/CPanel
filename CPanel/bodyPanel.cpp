@@ -1678,7 +1678,7 @@ void bodyPanel::supPhiInf(const Eigen::Vector3d &POI, Eigen::Matrix<double, 1, E
 
 
 
-void bodyPanel::supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<double, 1, Eigen::Dynamic> &Arow, double &srcPhi, bool DODflag, const double Mach, size_t ii)
+void bodyPanel::supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<double, 1, Eigen::Dynamic> &Arow, double &srcPhi, bool DODflag, const double Mach, size_t ii, size_t nNodesOrig)
 {
 	//if (DODflag)
 	if (DODflag && !supInclinedFlag) // maybe make different supinclined panel func to make this more efficient
@@ -1828,19 +1828,19 @@ void bodyPanel::supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<doub
 				{
 					//--------------------------------------------------------------------------------------//
 					// Need to be tested more thoroughly
-					zFlag = true;
-					if (abs(1 - abs(m)) < epsGenWeak) // sonic edge
-					{
-						double stuff = 0;
-					}
-					else if (abs(m) < 1) // subsonic edge
-					{
-						integralCoeffs = supEdgeInfSubInPlane(R1, R2, ym1c, ym2c, xmc, m, z, eps1, eps2, mFlag);
-					}
-					else if (abs(m) > 1) // supersonic edge
-					{
-						integralCoeffs = supEdgeInfSupInPlane(R1, R2, ym1, ym2, xm, lam, z, eps1, eps2);
-					}
+					//zFlag = true;
+					//if (abs(1 - abs(m)) < epsGenWeak) // sonic edge
+					//{
+					//	double stuff = 0;
+					//}
+					//else if (abs(m) < 1) // subsonic edge
+					//{
+					//	integralCoeffs = supEdgeInfSubInPlane(R1, R2, ym1c, ym2c, xmc, m, z, eps1, eps2, mFlag);
+					//}
+					//else if (abs(m) > 1) // supersonic edge
+					//{
+					//	integralCoeffs = supEdgeInfSupInPlane(R1, R2, ym1, ym2, xm, lam, z, eps1, eps2);
+					//}
 					//--------------------------------------------------------------------------------------//
 				}
 			} // Edge either intersects Mach cone with no edge points inside (i.e. inside Mach wedge), or is completely outside. Former case can only occur with supersonic edge
@@ -1933,6 +1933,17 @@ void bodyPanel::supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<doub
 		// Compute influence of each vertex on the field point
 		dubVertsPhi = dubCoeffMat.transpose() * dubVertsMat.inverse();
 
+
+		/*for (size_t i = 0; i < nodes.size(); i++)
+		{
+			if (nodes[i]->getIndex() > nNodesOrig)
+			{
+				dubVertsPhi(i) = 0;
+			}
+		}*/
+
+
+
 		// Fill A matrix
 		// Need to make this more efficient
 		for (size_t i = 0; i < nodes.size(); i++)
@@ -1941,9 +1952,14 @@ void bodyPanel::supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<doub
 			if (ii == nodes[i]->getIndex())
 			//if (abs((POI - nodes[i]->getPnt()).norm()) < 2.0*nodes[i]->linGetCPoffset())
 			{
-				Arow[nodes[i]->getIndex()] = -0.5;
+				if (nodes[i]->getIndex() < nNodesOrig)
+				{
+					Arow[nodes[i]->getIndex()] = -0.5;
+				}
+				//Arow[nodes[i]->getIndex()] = -0.5;
 			}
-			else
+			else//if (nodes[i]->getIndex() < nNodesOrig)
+			//else if (ii < nNodesOrig)
 			{
 				//--------------------------------------------------------------------------------------//
 				// This is for subsonic LE, flat bottom cases
@@ -1952,7 +1968,7 @@ void bodyPanel::supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<doub
 				Arow[nodes[i]->getIndex()] += dubVertsPhi(i);
 				}*/
 				//--------------------------------------------------------------------------------------//
-				//Arow[nodes[i]->getIndex()] += dubVertsPhi(i);
+				Arow[nodes[i]->getIndex()] += dubVertsPhi(i);
 			}
 		}
 	}
@@ -1964,7 +1980,11 @@ void bodyPanel::supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<doub
 			if (ii == nodes[i]->getIndex())
 			//if (abs((POI - nodes[i]->getPnt()).norm()) < 2.0*nodes[i]->linGetCPoffset())
 			{
-				Arow[nodes[i]->getIndex()] = -0.5;
+				if (nodes[i]->getIndex() < nNodesOrig)
+				{
+					Arow[nodes[i]->getIndex()] = -0.5;
+				}
+				//Arow[nodes[i]->getIndex()] = -0.5;
 			}
 		}
 	}

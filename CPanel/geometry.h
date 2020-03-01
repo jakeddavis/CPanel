@@ -269,10 +269,11 @@ class geometry
 	struct tempPntsStruct
 	{
 		Eigen::Vector3d tempPnt;
-		//size_t index;
 		bool isCopied = false;
 		int copyIndex;
 	};
+	std::vector<tempPntsStruct> tempPnts;
+
 
 	size_t nNodesOrig;
 
@@ -280,6 +281,23 @@ class geometry
 	void supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet2, std::vector<tempPntsStruct> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes);
 	//void supSort(std::vector<size_t> &pansSet1, std::vector<size_t> &pansSet2, std::vector<Eigen::Vector3d> &tempPnts, std::vector<Eigen::Vector3d> &tempCons, size_t &nNodes, std::vector<int> &commonCons);
 
+	void readOrigNodes(std::string tri_file, bool normFlag);
+	nodes_type ctrlPntNodes;
+	surfaces_type ctrlPntSurfaces;
+	edges_type ctrlPntEdges;
+	bodyPanels_type ctrlPntbPanels;
+
+	size_t nNodesTemp, nTrisTemp;
+
+
+	void createSurfacesTemp(const Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> &connectivity, const Eigen::MatrixXd &norms, const Eigen::VectorXi &allID);
+	edge* ctrlPntFindEdge(cpNode* n1, cpNode* n2);
+	std::vector<edge*> ctrlPntPanEdges(const std::vector<cpNode*>  &pNodes);
+
+
+	// Read in supersonic sharp leading edge flag given by user (defined here for now)
+	bool supSharpLEflag = true;
+	//bool supSharpLEflag = false;
 
 
 public:
@@ -304,12 +322,15 @@ public:
 		//---------------------------------------------------------------------------------------//
 		//---------------------------------------------------------------------------------------//
 
-		// Read in supersonic sharp leading edge flag given by user (defined here for now)
-		bool supSharpLEflag = true;
-		//bool supSharpLEflag = false;
+
 		// Check flag
 		if (supSharpLEflag)
 		{
+
+			// read original data to get original nodes for control point offset vector computation
+			readOrigNodes(p->geomFile->file, p->normFlag);
+
+
 			// Create new .tri file to write sorted data to
 			std::string sorted = "/sorted.tri";
 			std::string newSorted = p->geomFile->path + sorted;
@@ -373,6 +394,10 @@ public:
 	std::vector<cpNode*> getBodyNodes() { return bodyNodes; }
 	void geometry::setBodyToWind(double a, double b);
 	Eigen::Vector3d geometry::supComputeWindDir();
+
+
+	//bool supGetSharpLEflag() { return supSharpLEflag; }
+
 };
 
 

@@ -148,7 +148,7 @@ public:
 	void supPhiInf(const Eigen::Vector3d &P, Eigen::Matrix<double, 1, Eigen::Dynamic> &Arow, double &Phi, bool DOIflag, const double mach);
 
 
-	void supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<double, 1, Eigen::Dynamic> &Arow, double &srcPhi, bool DODflag, const double Mach, size_t ii);
+	void supPhiInf11012019(const Eigen::Vector3d &POI, Eigen::Matrix<double, 1, Eigen::Dynamic> &Arow, double &srcPhi, bool DODflag, const double Mach, size_t ii, size_t nNodesOrig);
 
 
 	Eigen::Vector2d supEdgeInfSon(const double ym1, const double ym2, const double xm, const double R1, const double R2, const double lam, const double z, const double eps1, const double eps2);

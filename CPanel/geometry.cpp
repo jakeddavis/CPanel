@@ -156,7 +156,7 @@ void geometry::supSortSurfs(std::string tri_file)
 		//	bool isCopied = false;
 		//};
 
-		std::vector<tempPntsStruct> tempPnts;
+		//std::vector<tempPntsStruct> tempPnts;
 
 		for (size_t i = 0; i<nNodes; i++)
 		{
@@ -325,8 +325,6 @@ void geometry::supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet
 	size_t nPanSet1 = panSet1.size();
 	size_t nPanSet2 = panSet2.size();
 
-	size_t count = 0;
-
 	for (size_t i = 0; i < nPanSet1; i++)
 	{
 		for (size_t j = 0; j < nPanSet2; j++)
@@ -342,7 +340,7 @@ void geometry::supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet
 			std::sort(compCons1.begin(), compCons1.end());
 			std::sort(compCons2.begin(), compCons2.end());
 
-			// initialise a vector store the common values and an iterator to traverse this vector 
+			// initialise a vector to store the common values and an iterator to traverse this vector 
 			std::vector<int> v(compCons1.size() + compCons2.size());
 			std::vector<int>::iterator it, st;
 
@@ -391,6 +389,8 @@ void geometry::supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet
 						tempPnts[nNodes-1].tempPnt = tempPnts[commonCons[k]].tempPnt;
 						tempPnts[commonCons[k]].isCopied = true;
 						tempPnts[commonCons[k]].copyIndex = nNodes - 1;
+
+						tempPnts[nNodes - 1].copyIndex = commonCons[k];
 
 						// replace index of common point in the LOWER panel with index of new copy of common point
 						if (tempCons[panSet2[j]].x() == commonCons[k])
@@ -510,6 +510,187 @@ void geometry::supSort(std::vector<size_t> &panSet1, std::vector<size_t> &panSet
 
 //	}
 //}
+
+
+
+
+void geometry::readOrigNodes(std::string tri_file, bool normFlag)
+{
+	std::ifstream fid;
+	fid.open(tri_file);
+
+//	size_t nNodesTemp, nTrisTemp;
+	if (fid.is_open())
+	{
+		fid >> nNodesTemp >> nTrisTemp;
+		Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> connectivityTemp(nTrisTemp, 3);
+		Eigen::VectorXi allIDtemp(nTrisTemp);
+		std::vector<int> surfIDstemp;
+		std::vector<int> wakeIDstemp;
+		std::vector<int> surfTypestemp;
+
+
+		// Read XYZ Locations of Nodes
+		Eigen::Vector3d pnt;
+		cpNode* n;
+		for (size_t i = 0; i<nNodesTemp; i++)
+		{
+			fid >> pnt(0) >> pnt(1) >> pnt(2);
+			n = new cpNode(pnt, i);
+			ctrlPntNodes.push_back(n);
+		}
+
+
+		// Temporarily Store Connectivity
+		if (inputMach > 1.0)
+		{
+			// For supersonic scheme, need to go around panel CCW -> switch 1 and 2 below relative to original
+			for (Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index i = 0; i<static_cast<Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index>(nTrisTemp); i++)
+			{
+				fid >> connectivityTemp(i, 0) >> connectivityTemp(i, 2) >> connectivityTemp(i, 1);
+			}
+		}
+		else
+		{/*
+			for (Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index i = 0; i<static_cast<Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index>(nTris); i++)
+			{
+				fid >> connectivity(i, 0) >> connectivity(i, 1) >> connectivity(i, 2);
+			}*/
+		}
+
+		connectivityTemp = connectivityTemp.array() - 1; //Adjust for 0 based indexing
+
+												 // Scan Surface IDs and collect Unique IDs
+		size_t wakeNodeStartTemp = nNodesTemp;
+		size_t wakeTriStartTemp = nTrisTemp;
+		for (Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index i = 0; i<static_cast<Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index>(nTrisTemp); i++)
+		{
+			fid >> allIDtemp(i);
+			if (i == 0 || allIDtemp(i) != allIDtemp(i - 1))
+			{
+				if (allIDtemp(i) > 1000)
+				{
+					wakeIDstemp.push_back(allIDtemp(i));
+				}
+				else
+				{
+					surfIDstemp.push_back(allIDtemp(i));
+				}
+			}
+			if (allIDtemp(i) > 1000 && allIDtemp(i - 1) < 1000)
+			{
+				wakeNodeStartTemp = connectivityTemp.row(i).minCoeff();
+				wakeTriStartTemp = static_cast<size_t>(i);
+			}
+		}
+
+		/*if (wakeIDs.size() > 0)
+		{
+			correctWakeConnectivity(wakeNodeStart, wakeTriStart, connectivity);
+		}*/
+
+		// Read in Normals if included in input file
+		Eigen::MatrixXd normsTemp = Eigen::MatrixXd::Zero(static_cast<Eigen::MatrixXd::Index>(nTrisTemp), 3);
+		if (normFlag)
+		{
+			//std::cout << "Reading Bezier Normals from Geometry File..." << std::endl;
+			for (Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index i = 0; i<static_cast<Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index>(nTrisTemp); i++)
+			{
+				fid >> normsTemp(i, 0) >> normsTemp(i, 1) >> normsTemp(i, 2);
+			}
+		}
+
+		//std::cout << "Generating Panel Geometry..." << std::endl;
+
+		//createSurfaces(connectivityTemp, normsTemp, allIDtemp);
+		createSurfacesTemp(connectivityTemp, normsTemp, allIDtemp);
+
+
+		for (nodes_index_type i = 0; i<nodes.size(); i++)
+		{
+			ctrlPntNodes[i]->setIndex(i);
+		}
+
+		//std::cout << "Building Octree..." << std::endl;
+
+		//createOctree();
+
+		// Set neighbors
+		//std::cout << "Finding Panel Neighbors..." << std::endl;
+
+		for (edges_index_type i = 0; i<ctrlPntEdges.size(); i++)
+		{
+			ctrlPntEdges[i]->setNeighbors();
+		}
+
+
+		/*bool wakeMergeFlag = false;
+		if (wakes.size() > 1)
+		{
+			std::vector<wake*> newWakes;
+			for (wakes_index_type i = 0; i<wakes.size(); i++)
+			{
+				for (wakes_index_type j = i; j<wakes.size(); j++)
+				{
+					if (wakes[i]->isSameWake(wakes[j]))
+					{
+						wakes[i]->mergeWake(wakes[j]);
+						delete wakes[j];
+						newWakes.push_back(wakes[i]);
+						wakeMergeFlag = true;
+					}
+				}
+			}
+			if (wakeMergeFlag == true)
+			{
+				wakes = newWakes;
+			}
+		}*/
+
+
+		// Collect all panels in geometry
+
+		std::vector<bodyPanel*> tempB;
+		std::vector<wakePanel*> tempW;
+		for (surfaces_index_type i = 0; i<ctrlPntSurfaces.size(); i++)
+		{
+			tempB = ctrlPntSurfaces[i]->getPanels();
+			ctrlPntbPanels.insert(ctrlPntbPanels.begin(), tempB.begin(), tempB.end());
+		}
+		for (wakes_index_type i = 0; i<wakes.size(); i++)
+		{
+			tempW = wakes[i]->getPanels();
+			for (size_t j = 0; j<tempW.size(); j++)
+			{
+				if (tempW[j]->isSecondRow == false)
+				{
+					wPanels.push_back(tempW[j]);
+				}
+			}
+		}
+
+		if (subHOMFlag || inputMach > 1.0)
+		{
+			// Get control point data for linear schemes
+			Eigen::Vector3d windDir = supComputeWindDir();
+			for (nodes_index_type i = 0; i < ctrlPntNodes.size(); i++)
+			{
+				if (ctrlPntNodes[i]->getBodyPans().size() > 0)
+				{
+					//bodyNodes.push_back(nodes[i]);
+					ctrlPntNodes[i]->setLinCPoffset();
+					ctrlPntNodes[i]->setLinCPnormal();
+				}
+				else
+				{
+					wakeNodes.push_back(nodes[i]);
+				}
+			}
+		}
+
+	}
+}
+
 
 
 
@@ -806,9 +987,9 @@ void geometry::readTri(std::string tri_file, bool normFlag)
         std::cout << "\tEdges : " << edges.size() << std::endl;
         std::cout << "\tPanels : " << nTris << std::endl;
 
-        // Erase duplicate node pointers
-        std::sort( nodes.begin(), nodes.end() );
-        nodes.erase( std::unique( nodes.begin(), nodes.end() ), nodes.end() );
+        //// Erase duplicate node pointers
+        //std::sort( nodes.begin(), nodes.end() );
+        //nodes.erase( std::unique( nodes.begin(), nodes.end() ), nodes.end() );
 
         for (nodes_index_type i=0; i<nodes.size(); i++)
         {
@@ -938,30 +1119,91 @@ void geometry::readTri(std::string tri_file, bool normFlag)
 
 		if (subHOMFlag || inputMach > 1.0)
 		{
-			// Get control point data for linear schemes
+			//// Get control point data for linear schemes
+			//Eigen::Vector3d windDir = supComputeWindDir();
+			//for (nodes_index_type i = 0; i < nodes.size(); i++)
+			//{
+			//	if (nodes[i]->getBodyPans().size() > 0)
+			//	{
+			//		bodyNodes.push_back(nodes[i]);
+			//		nodes[i]->setLinCPoffset();
+			//		nodes[i]->setLinCPnormal();
+			//	}
+			//	else
+			//	{
+			//		wakeNodes.push_back(nodes[i]);
+			//	}
+			//}
+
+
+			
+
+			//////////////////////////////////////////////////////// 11/15/2019
+
+			// made new readTri function in attemp to create original node and panel data. this can then be used to compute control point normals.
+			// had to go pretty far into readTri, which seems to have broken second readTri function, since it's trying to write over the original stuff.
+			// PATH FORWARD
+			// with new readTri function, create new variables for all the original nodes and panels (and edges?), then these variables can be used
+			// to compute CP normals, and the original variables will be preserved 
+
+
+
+			// Get original control point data
 			Eigen::Vector3d windDir = supComputeWindDir();
+
+			///////// Now done in other readTri function
+			//for (nodes_index_type i = 0; i < ctrlPntNodes.size(); i++)
+			//{
+			//	if (nodes[i]->getBodyPans().size() > 0) /////////////////// kinda sketchu using nodes[i]????
+			//	{
+			//		//ctrlPntNodes[i]->setLinCPoffset();
+			//		ctrlPntNodes[i]->setLinCPnormal();
+			//	}
+			//}
+
+			// Set new control point data (copy over original data)
 			for (nodes_index_type i = 0; i < nodes.size(); i++)
 			{
 				if (nodes[i]->getBodyPans().size() > 0)
 				{
 					bodyNodes.push_back(nodes[i]);
-					nodes[i]->setLinCPnormal();
 
-					if (i > nNodesOrig - 1)
+					if (supSharpLEflag)
 					{
-						nodes[i]->setLinCPoffsetCopy();
+						if (i < nNodesOrig)
+						{
+							nodes[i]->copyCtrlPntNodeOffset(ctrlPntNodes[i]->linGetCPoffset());
+							nodes[i]->copyCtrlPntNodeNormal(ctrlPntNodes[i]->linGetCPnormal());
+						}
+						else // for new copied nodes, find original version of node and get CP data from there
+						{
+							nodes[i]->copyCtrlPntNodeOffset2(ctrlPntNodes[tempPnts[i].copyIndex]->linGetCPoffset());
+							nodes[i]->copyCtrlPntNodeNormal(ctrlPntNodes[tempPnts[i].copyIndex]->linGetCPnormal());
+						}
 					}
 					else
 					{
 						nodes[i]->setLinCPoffset();
-					}
-					//nodes[i]->setLinCPoffset();
+						nodes[i]->setLinCPnormal();
+					}	
 				}
 				else
 				{
 					wakeNodes.push_back(nodes[i]);
 				}
 			}
+
+
+			//if (i > nNodesOrig - 1)
+			//{
+			//	//nodes[i]->setLinCPoffsetCopy();
+			//	nodes[i]->setLinCPnormalCopy();
+			//}
+			//else
+			//{
+			//	//nodes[i]->setLinCPoffset();
+			//	nodes[i]->setLinCPnormal();
+			//}
 
 
 			//----------------------------------------------------------------------------------------------------//
@@ -1160,6 +1402,46 @@ void geometry::createSurfaces(const Eigen::Matrix<size_t, Eigen::Dynamic, Eigen:
     }
 }
 
+
+void geometry::createSurfacesTemp(const Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic> &connectivity, const Eigen::MatrixXd &norms, const Eigen::VectorXi &allID)
+{
+	surface* s = nullptr;
+	wake* w = nullptr;
+	bodyPanel* bPan;
+	wakePanel* wPan;
+	std::vector<edge*> pEdgesTemp;
+	for (Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index i = 0; i<static_cast<Eigen::Matrix<size_t, Eigen::Dynamic, Eigen::Dynamic>::Index>(nTrisTemp); i++)
+	{
+		std::vector<cpNode*> pNodes;
+		pNodes.push_back(ctrlPntNodes[connectivity(i, 0)]);
+		pNodes.push_back(ctrlPntNodes[connectivity(i, 1)]);
+		pNodes.push_back(ctrlPntNodes[connectivity(i, 2)]);
+		pEdgesTemp = ctrlPntPanEdges(pNodes); //Create edge or find edge that already exists
+		if (allID(i) <= 1000)
+		{
+			if (i == 0 || allID(i) != allID(i - 1))
+			{
+				s = new surface(allID(i), this);
+				ctrlPntSurfaces.push_back(s);
+			}
+			bPan = new bodyPanel(pNodes, pEdgesTemp, norms.row(i), s, static_cast<size_t>(allID(i)));
+			s->addPanel(bPan);
+		}
+		else
+		{
+			if (i == 0 || allID(i) != allID(i - 1))
+			{
+				w = new wake(static_cast<size_t>(allID(i)), this);
+				wakes.push_back(w);
+			}
+			wPan = new wakePanel(pNodes, pEdgesTemp, norms.row(i), w, static_cast<size_t>(allID(i)));
+			w->addPanel(wPan);
+		}
+	}
+}
+
+
+
 std::vector<edge*> geometry::panEdges(const std::vector<cpNode*>  &pNodes)
 {
     size_t i1,i2;
@@ -1182,6 +1464,32 @@ std::vector<edge*> geometry::panEdges(const std::vector<cpNode*>  &pNodes)
     return triEdges;
 }
 
+
+
+std::vector<edge*> geometry::ctrlPntPanEdges(const std::vector<cpNode*>  &pNodes)
+{
+	size_t i1, i2;
+	std::vector<edge*> triEdges;
+	edge* e;
+	for (size_t i = 0; i<pNodes.size(); i++)
+	{
+		i1 = i;
+		if (i == pNodes.size() - 1)
+		{
+			i2 = 0;
+		}
+		else
+		{
+			i2 = i + 1;
+		}
+		e = ctrlPntFindEdge(pNodes[i1], pNodes[i2]);
+		triEdges.push_back(e);
+	}
+	return triEdges;
+}
+
+
+
 edge* geometry::findEdge(cpNode* n1,cpNode* n2)
 {
     for (edges_index_type i=0; i<edges.size(); i++)
@@ -1199,6 +1507,30 @@ edge* geometry::findEdge(cpNode* n1,cpNode* n2)
     edges.push_back(e);
     return e;
 }
+
+
+
+
+edge* geometry::ctrlPntFindEdge(cpNode* n1, cpNode* n2)
+{
+	for (edges_index_type i = 0; i<ctrlPntEdges.size(); i++)
+	{
+		if (ctrlPntEdges[i]->sameEdge(n1, n2))
+		{
+			return ctrlPntEdges[i];
+		}
+	}
+
+	// If edge doesn't exist, create one
+	// NOTE: edge never used geometry that was linked to it
+	//    edge* e = new edge(n1,n2,this);
+	edge* e = new edge(n1, n2);
+	ctrlPntEdges.push_back(e);
+	return e;
+}
+
+
+
 
 void geometry::createOctree()
 {
@@ -1399,6 +1731,7 @@ void geometry::supSetInfCoeff()
 
 	// Build A and B matrices
 	for (size_t i = 0; i < nBodyNodes; i++)
+	//for (size_t i = 0; i < nNodesOrig; i++)
 	{
 		// Control point in original Ref CSYS. Transformed to panel local CSYS in supPhiInf()
 		ctrlPnt = nodes[i]->calcCP();
@@ -1407,10 +1740,14 @@ void geometry::supSetInfCoeff()
 		for (size_t j = 0; j < nBodyPans; j++)
 		{
 			DODflag = bPanels[j]->supDODcheck(ctrlPnt, inputMach, windDir);
-			bPanels[j]->supPhiInf(ctrlPnt, Arow, B(static_cast<Eigen::MatrixXd::Index>(i), static_cast<Eigen::MatrixXd::Index>(j)), DODflag, inputMach);
-			//bPanels[j]->supPhiInf11012019(ctrlPnt, Arow, B(static_cast<Eigen::MatrixXd::Index>(i), static_cast<Eigen::MatrixXd::Index>(j)), DODflag, inputMach, i);
+			//bPanels[j]->supPhiInf(ctrlPnt, Arow, B(static_cast<Eigen::MatrixXd::Index>(i), static_cast<Eigen::MatrixXd::Index>(j)), DODflag, inputMach);
+			bPanels[j]->supPhiInf11012019(ctrlPnt, Arow, B(static_cast<Eigen::MatrixXd::Index>(i), static_cast<Eigen::MatrixXd::Index>(j)), DODflag, inputMach, i, nNodesOrig);
 		}
 		A.row(i) = Arow;
+
+
+		//std::cout << "\n" << i << "\t" << Arow << std::endl;
+
 
 		// Completion percentage (not exactly accurate w/ ss scheme, still useful though)
 		for (int j = 0; j < percentage.size(); j++)
